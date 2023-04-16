@@ -118,14 +118,10 @@ if __name__ == '__main__':
     min_image_size = find_min_image_size(image_sizes)
     print(min_image_size)
 
-
-    load_and_merge_dataset()
-    print(images[0].shape)
-    images_array = np.array(images)
-
-
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_examples, train_labels))
-    test_dataset = tf.data.Dataset.from_tensor_slices((test_examples, test_labels))
+# Doesnt work
+    #load_and_merge_dataset()
+    #print(images[0].shape)
+    #images_array = np.array(images)
 
 
 
