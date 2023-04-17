@@ -44,8 +44,6 @@ def load_dataset_and_prepare():
     test = data.skip(train_size+val_size).take(test_size)
 
 
-
-
 def check_image_sizes() -> List[Tuple[int, int]]:
     
     sizes: Set[Tuple[int, int]] = set()
@@ -67,7 +65,6 @@ def check_image_sizes() -> List[Tuple[int, int]]:
                 
                 image = cv2.imread(path_to_file)
                 image =  cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #changing to rgb
-                plt.imshow(image)
                 plt.show()
                 height, width, channels = image.shape
                 sizes.add((width, height))
