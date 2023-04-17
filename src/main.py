@@ -10,18 +10,41 @@ import tensorflow as tf
 IMAGE_WIDTH: int = 224
 IMAGE_HEIGHT: int = 224
 
-CATEGORIES: Dict[int, str] = { 0: 'biological', 1: 'glass', 2: 'metal', 3: 'paper', 4: 'plastic'}
+LABELS = {
+    "biological": 0,
+    "glass": 1,
+    "metal": 2,
+    "paper": 3,
+    "plastic": 4
+}
 
-def preprocess_image():
-    pass
 
-def load_dataset():
+def load_dataset_and_prepare():
     current_dir: str = os.getcwd()
     data_dir: str =os.path.join(os.path.dirname(current_dir), 'data')
     data = tf.keras.utils.image_dataset_from_directory(data_dir)
-    data_iterator = data.as_numpy_iterator()
-
     
+    #preprocessing sacling to <0,1>
+    data = data.map(lambda x,y: (x/255, y))
+    data.as_numpy_iterator().next()
+    
+    print(f"NUMBER OF BATCHES: {len(data)}")
+    
+    train_size = int(len(data)* 0.7)
+    val_size = int(len(data)* 0.2)
+    test_size = int(len(data)* 0.1)
+
+    print("BATCH SIZES:")
+    print(f"TRAIN NUMBER OF BATCHES: {train_size}")
+    print(f"VALIDATION NUMBER OF BATCHES: {val_size}")
+    print(f"TEST NUMBER OF BATCHES: {test_size}")
+
+    train = data.take(train_size)
+    val = data.skip(train_size).take(val_size)
+    test = data.skip(train_size+val_size).take(test_size)
+
+
+
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
@@ -43,6 +66,9 @@ def check_image_sizes() -> List[Tuple[int, int]]:
                 path_to_file: str = os.path.join(current_dir, current_file_name)
                 
                 image = cv2.imread(path_to_file)
+                image =  cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #changing to rgb
+                plt.imshow(image)
+                plt.show()
                 height, width, channels = image.shape
                 sizes.add((width, height))
     
@@ -83,8 +109,6 @@ if __name__ == '__main__':
         
         width, height = size
 
-        #print(f"{width}, {height}")
-
     max_image_size = find_max_image_size(image_sizes)
     print(max_image_size)
 
@@ -92,7 +116,7 @@ if __name__ == '__main__':
     min_image_size = find_min_image_size(image_sizes)
     print(min_image_size)
 
-    load_dataset()
+    load_dataset_and_prepare()
 
 
 
