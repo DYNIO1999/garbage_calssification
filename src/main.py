@@ -138,7 +138,7 @@ def load_dataset_and_prepare():
 
     per_class_proportions_split_2 = []
 
-    for it in list(LABELS_TO_NUMBER.keys()):
+    for _ in list(LABELS_TO_NUMBER.keys()):
         per_class_proportions_split_2.append(int(uniform_distribution/dataset_image_count*100))
 
 
