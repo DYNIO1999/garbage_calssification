@@ -96,8 +96,6 @@ def load_dataset_and_prepare():
     
     data.as_numpy_iterator().next()
     
-    print(f"NUMBER OF BATCHES: {len(data)}")
-
     dataset_image_count: int = get_orginal_dataset_size()
 
     per_class_orginal_distribution = []
@@ -109,9 +107,6 @@ def load_dataset_and_prepare():
             result = calculate_orginal_distribution(current_dir)
             per_class_orginal_distribution.append(result)
 
-    #for it, value in enumerate(per_class_orginal_distribution):
-        #print(f"{NUMBER_TO_LABEL[it]}  =  {value}")
-
     #SPLIT 1
     per_class_proportions = []
     for it in per_class_orginal_distribution:
@@ -120,7 +115,6 @@ def load_dataset_and_prepare():
     split_1_dataset_size = 0
     for it, value in enumerate(per_class_proportions):
         split_1_dataset_size+=value
-        #print(f"{NUMBER_TO_LABEL[it]}  =  {value}")
 
     print(f"SPLIT 1 SIZE: {split_1_dataset_size}")
     
@@ -134,7 +128,6 @@ def load_dataset_and_prepare():
 
     #SPLIT 2    
     uniform_distribution: int  = int(dataset_image_count/ len(NUMBER_TO_LABEL))
-    #print(f"UNIFORM DISTRIBUTION: {uniform_distribution}")
 
     per_class_proportions_split_2 = []
 
