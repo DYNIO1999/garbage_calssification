@@ -116,15 +116,18 @@ class ModelData:
 
         current_dir: str = os.getcwd()
         if index is not None:
-            plt.grid(True)
+            os.mkdir(os.path.join(current_dir, f"model_{index}"))
+        else:
+            os.mkdir(os.path.join(current_dir, f"model"))
 
-            os.mkdir(os.path.join(current_dir, f"model_loss_{index}"))
-            plt.savefig(os.path.join(f"model_loss_{index}", f"model_loss_{index}.png"))
+        if index is not None:
+            plt.grid(True)
+            plt.savefig(os.path.join(f"model_{index}", f"model_loss_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
-            os.mkdir(os.path.join(current_dir, f"model_loss"))
-            plt.savefig(os.path.join(f"model_loss", f"model_loss.png"))
+
+            plt.savefig(os.path.join(f"model", f"model_loss.png"))
 
         plt.clf()
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
@@ -136,13 +139,11 @@ class ModelData:
 
         if index is not None:
             plt.grid(True)
-            os.mkdir(os.path.join(current_dir, f"model_accuracy_{index}"))
-            plt.savefig(os.path.join(f"model_accuracy_{index}", f"model_accuracy_{index}.png"))
+            plt.savefig(os.path.join(f"model_{index}", f"model_accuracy_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
-            os.mkdir(os.path.join(current_dir, f"model_accuracy"))
-            plt.savefig(os.path.join(f"model_accuracy", f"model_accuracy.png"))
+            plt.savefig(os.path.join(f"model", f"model_accuracy.png"))
 
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
@@ -253,6 +254,9 @@ def create_cnn_model(visualize = False):
     model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
 
+def save_to_file(path, data):
+    with open(path, 'w') as f:
+        f.write(data)
 
 def calculate_orginal_distribution(path: str) -> int:
 
@@ -354,6 +358,7 @@ def load_dataset_and_prepare():
 
     best_model_split_1 = find_best_split_1(models_to_check_list)
     print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
+    save_to_file(os.path.join(current_dir, "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
 
     best_models_list.append(best_model_split_1)
 
