@@ -1,4 +1,4 @@
-from typing import List, Tuple, Set, Dict
+from typing import List, Tuple, Set, Dict, Optional
 
 import os, os.path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -13,6 +13,7 @@ from keras.callbacks import History
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
+from keras_visualizer import visualizer
 
 #
 # # testing code
@@ -50,6 +51,56 @@ NUMBER_TO_LABEL = {
     3:"paper",
     4:"plastic"
 }
+
+
+class ModelData:
+    def __init__(self, model, num_of_epochs, train_data_split, val_data_split, test_data_split = None):
+        self.model = model
+        self.model_history = History()
+        self.num_of_epochs = num_of_epochs
+        self.train_data_split = train_data_split
+        self.val_data_split = val_data_split
+        self.test_data_split = test_data_split
+
+    def train_model(self):
+        model_result = self.model.fit(self.train_data_split,
+                                  steps_per_epoch=len(self.train_data_split),
+                                  epochs=self.num_of_epochs,
+                                  validation_data=self.val_data_split,
+                                  validation_steps=len(self.val_data_split),
+                                  callbacks=[self.model_history]
+                                  )
+
+    def save_training_history(self, index = None):
+        train_loss = self.model_history.history['loss']
+        val_loss = self.model_history.history['val_loss']
+
+        train_acc = self.model_history.history['accuracy']
+        val_acc = self.model_history.history['val_accuracy']
+
+        epochs = range(1, len(train_loss) + 1)
+
+        plt.plot(epochs, train_loss, 'b', label='Training Loss')
+        plt.plot(epochs, val_loss, 'r', label='Validation Loss')
+        plt.title('Training and Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+
+        plt.figure()
+
+        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+        plt.title('Training and Validation Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend()
+
+        if index:
+            plt.savefig(f"model_{index}.png")
+        else:
+            plt.show()
+            plt.savefig(f"model.png")
 
 def normalise_data(x,y):
     return (x/255, y)
@@ -111,7 +162,33 @@ def get_orginal_dataset_size() -> int:
             count += len(list_of_files)
             
     return count
-    
+
+
+def create_cnn_model(visualize = False):
+    model = Sequential()
+
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', input_shape=(256, 256, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
+    model.add(Flatten())
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(5, activation='softmax'))
+    model.summary()
+
+    if visualize:
+        visualizer(model, file_format='png', view=True)
+
+    model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+
 def calculate_orginal_distribution(path: str) -> int:
 
     list_of_files: List[str] = os.listdir(path)
@@ -188,86 +265,39 @@ def load_dataset_and_prepare():
     val_data_split_3 = val_data_split_2
     test_data_split_3 = test_data_split_2
 
-    batch = train_data_split_3.as_numpy_iterator().next()
+    models_to_check_list = []
 
-    ##FROM HERE might not work..
-    #We will see...
-
-    history = History()
-    model = Sequential()
-
-    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', input_shape=(256, 256, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=2))
-    model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=2))
-    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=2))
-
-    model.add(Flatten())
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(5, activation='softmax'))
-    model.summary()
-
-    model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-    # model_history = model.fit(
-    #     train_data_split_1,
-    #     steps_per_epoch=len(train_data_split_1),
-    #     epochs=EPOCHS,
-    #     validation_data=val_data_split_1,
-    #     validation_steps=len(val_data_split_1),
-    #     callbacks=[history]
-    # )
-
-    model_history = model.fit(
-        train_data_split_1,
-        steps_per_epoch= len(train_data_split_1),
-        epochs= 10,
-        validation_data=val_data_split_1,
-        validation_steps= len(val_data_split_1),
-        callbacks=[history]
-    )
-
-    train_loss = history.history['loss']
-    val_loss = history.history['val_loss']
-
-    train_acc = history.history['accuracy']
-    val_acc = history.history['val_accuracy']
-
-    epochs = range(1, len(train_loss) + 1)
-
-    plt.plot(epochs, train_loss, 'b', label='Training Loss')
-    plt.plot(epochs, val_loss, 'r', label='Validation Loss')
-    plt.title('Training and Validation Loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.figure()
-
-    plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
-    plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
-    plt.title('Training and Validation Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-
-    plt.show()
+    model_1_epoch_10 = create_cnn_model()
 
 
-    train_loss, train_acc = model.evaluate(train_data_split_1)
-    val_loss, val_acc = model.evaluate(test_data_split_1)
+    for i in range(1,6):
+        models_to_check_list.append(
+            ModelData(
+                model_1_epoch_10,
+                10*i,
+                train_data_split_1,
+                val_data_split_1
+            )
+        )
 
-    print('Training loss:', train_loss)
-    print('Training accuracy:', train_acc)
-    print('Validation loss:', val_loss)
-    print('Validation accuracy:', val_acc)
+    for index, item in enumerate(models_to_check_list):
+        item.train_model()
+        item.save_training_history(index)
 
-    #model_results = model.evaluate()
-    #model.save('weights/model.h5')
+
+    #Verify best and save
+    #found best epoch number and over fit it
+
+    # train_loss, train_acc = model.evaluate(train_data_split_1)
+    # val_loss, val_acc = model.evaluate(test_data_split_1)
+    #
+    # print('Training loss:', train_loss)
+    # print('Training accuracy:', train_acc)
+    # print('Validation loss:', val_loss)
+    # print('Validation accuracy:', val_acc)
+
+    # #model_results = model.evaluate()
+    # #model.save('weights/model.h5')
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
