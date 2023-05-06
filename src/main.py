@@ -150,8 +150,8 @@ def find_best_split_1(models_data_list: List[ModelData]):
 
     for item in models_data_list:
 
-        if item.model_result.history['val_accuracy'] >= best_model_data.model_result.history['val_accuracy'] \
-                and item.model_result.history['val_loss'] <= best_model_data.model_result.history['val_loss']:
+        if item.model_result.history['val_accuracy'][-1] >= best_model_data.model_result.history['val_accuracy'][-1] \
+                and item.model_result.history['val_loss'][-1] <= best_model_data.model_result.history['val_loss'][-1]:
 
             best_model_data = item
 
@@ -330,11 +330,11 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,3):
+    for i in range(1,11):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                1*i,
+                5*i,
                 train_data_split_1,
                 val_data_split_1
             )
@@ -347,6 +347,7 @@ def load_dataset_and_prepare():
         item.save_training_history(index)
 
     best_model_split_1 = find_best_split_1(models_to_check_list)
+    print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
 
     best_models_list.append(best_model_split_1)
 
