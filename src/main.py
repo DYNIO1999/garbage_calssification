@@ -61,7 +61,7 @@ class ModelData:
         self.train_data_split = train_data_split
         self.val_data_split = val_data_split
         self.test_data_split = test_data_split
-
+        self.model_result = None
     def train_model(self):
         model_result = self.model.fit(self.train_data_split,
                                   steps_per_epoch=len(self.train_data_split),
@@ -70,6 +70,7 @@ class ModelData:
                                   validation_steps=len(self.val_data_split),
                                   callbacks=[self.model_history]
                                   )
+        self.model_result = model_result
 
     def save_training_history(self, index = None):
         train_loss = self.model_history.history['loss']
@@ -96,11 +97,23 @@ class ModelData:
         plt.ylabel('Accuracy')
         plt.legend()
 
-        if index:
+        if index is not None:
             plt.savefig(f"model_{index}.png")
         else:
             plt.show()
             plt.savefig(f"model.png")
+
+def find_best(models_data_list: List[ModelData]) -> Optional[int]:
+
+    current_accuracy = 0.0
+    best_model_data: Optional[ModelData] = models_data_list[0]
+
+    for item in models_data_list:
+
+        if item.model_result.history['accuracy'] >= best_model_data.model_result.history['accuracy']:
+            best_model_data = item
+
+    return best_model_data
 
 def normalise_data(x,y):
     return (x/255, y)
@@ -283,6 +296,9 @@ def load_dataset_and_prepare():
     for index, item in enumerate(models_to_check_list):
         item.train_model()
         item.save_training_history(index)
+
+
+    best = find_best(models_to_check_list)
 
 
     #Verify best and save
