@@ -98,7 +98,7 @@ class ModelData:
                                     )
         self.model_result = model_result
 
-    def save_training_history(self, index = None):
+    def save_training_history(self, index = None, check_overfitting = true):
         train_loss = self.model_history.history['loss']
         val_loss = self.model_history.history['val_loss']
 
@@ -120,7 +120,7 @@ class ModelData:
         else:
             plt.grid(True)
             plt.show()
-            plt.savefig(f"model.png")
+            plt.savefig(f"model_loss.png")
 
         plt.clf()
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
@@ -136,7 +136,7 @@ class ModelData:
         else:
             plt.grid(True)
             plt.show()
-            plt.savefig(f"model.png")
+            plt.savefig(f"model_accuracy.png")
 
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
