@@ -256,7 +256,7 @@ def create_cnn_model(visualize = False):
 
 def save_to_file(path, data):
     with open(path, 'w') as f:
-        f.write(data)
+        f.write(str(data))
 
 def calculate_orginal_distribution(path: str) -> int:
 
