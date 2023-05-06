@@ -116,11 +116,11 @@ class ModelData:
 
         if index is not None:
             plt.grid(True)
-            plt.savefig(f"model_loss_{index}.png")
+            plt.savefig(os.path.join(f"model_loss_{index}", f"model_loss_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
-            plt.savefig(f"model_loss.png")
+            plt.savefig(os.path.join(f"model_loss", f"model_loss.png"))
 
         plt.clf()
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
@@ -132,11 +132,11 @@ class ModelData:
 
         if index is not None:
             plt.grid(True)
-            plt.savefig(f"model_accuracy_{index}.png")
+            plt.savefig(os.path.join(f"model_accuracy_{index}", f"model_accuracy_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
-            plt.savefig(f"model_accuracy.png")
+            plt.savefig(os.path.join(f"model_accuracy", f"model_accuracy.png"))
 
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
