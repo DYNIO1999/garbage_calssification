@@ -68,6 +68,11 @@ class TimeHistory(Callback):
     def get_times(self):
         return self.times
 
+
+CALLBACK_TO_INDEX = {
+    "HISTORY": 0,
+    "TIME": 1
+}
 class ModelData:
     def __init__(self, model, num_of_epochs, train_data_split, val_data_split, test_data_split = None):
         self.model = model
@@ -145,7 +150,9 @@ def find_best_split_1(models_data_list: List[ModelData]):
 
     for item in models_data_list:
 
-        if item.model_result.history['val_acc'] >= best_model_data.model_result.history['val_acc']:
+        if item.model_result.history['val_accuracy'] >= best_model_data.model_result.history['val_accuracy'] \
+                and item.model_result.history['val_loss'] <= best_model_data.model_result.history['val_loss']:
+
             best_model_data = item
 
     return best_model_data
@@ -323,27 +330,32 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,6):
+    for i in range(1,3):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                5*i,
+                1*i,
                 train_data_split_1,
                 val_data_split_1
             )
         )
 
+    #item.train_model([TimeHistory()])
+
     for index, item in enumerate(models_to_check_list):
-        item.train_model([TimeHistory()])
+        item.train_model()
         item.save_training_history(index)
 
     best_model_split_1 = find_best_split_1(models_to_check_list)
-    list_of_callbacks = best_model_split_1.get_callbacks()
 
     best_models_list.append(best_model_split_1)
 
     for index, item in enumerate(best_models_list):
         item.save_model(index)
+
+    #list_of_callbacks = best_model_split_1.get_callbacks()
+    #test = list_of_callbacks[CALLBACK_TO_INDEX["TIME"]]
+
 
     #Verify best and save
     #found best epoch number and over fit it
