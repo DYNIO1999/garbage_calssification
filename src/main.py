@@ -87,10 +87,13 @@ class ModelData:
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
+        plt.clf()
 
         if index is not None:
+            plt.grid(True)
             plt.savefig(f"model_loss_{index}.png")
         else:
+            plt.grid(True)
             plt.show()
             plt.savefig(f"model.png")
 
@@ -102,11 +105,15 @@ class ModelData:
         plt.legend()
 
         if index is not None:
+            plt.grid(True)
             plt.savefig(f"model_accuracy_{index}.png")
         else:
+            plt.grid(True)
             plt.show()
             plt.savefig(f"model.png")
 
+    def save_model(self, index = 0):
+        self.model.save(f"weights/model_{index}.h5")
 
 def find_best(models_data_list: List[ModelData]) -> Optional[int]:
 
@@ -283,6 +290,7 @@ def load_dataset_and_prepare():
     val_data_split_3 = val_data_split_2
     test_data_split_3 = test_data_split_2
 
+    best_models_list = []
     models_to_check_list = []
 
     model_1_epoch_10 = create_cnn_model()
@@ -302,9 +310,17 @@ def load_dataset_and_prepare():
         item.train_model()
         item.save_training_history(index)
 
+    best_num_of_epochs = find_best(models_to_check_list)
 
-    best = find_best(models_to_check_list)
+    best_model_split_1 = ModelData(model_1_epoch_10,
+                                   best_num_of_epochs,
+                                   train_data_split_1,
+                                   val_data_split_1,
+                                   test_data_split_1)
 
+    best_models_list.append(best_model_split_1)
+    for index, item in enumerate(best_models_list):
+        item.save_model(index)
 
     #Verify best and save
     #found best epoch number and over fit it
