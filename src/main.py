@@ -1,5 +1,6 @@
 from typing import List, Tuple, Set, Dict, Optional
 
+import time
 import os, os.path
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -10,6 +11,7 @@ import tensorflow as tf
 import keras.utils as ku
 
 from keras.callbacks import History
+from keras.callbacks import Callback
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
@@ -52,6 +54,19 @@ NUMBER_TO_LABEL = {
     4:"plastic"
 }
 
+class TimeHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.times = []
+
+    def on_epoch_begin(self, batch, logs={}):
+        self.epoch_start_time = time.time()
+
+    def on_epoch_end(self, batch, logs={}):
+        epoch_time = time.time() - self.epoch_start_time
+        self.times.append(epoch_time)
+
+    def get_times(self):
+        return self.times
 
 class ModelData:
     def __init__(self, model, num_of_epochs, train_data_split, val_data_split, test_data_split = None):
@@ -62,14 +77,16 @@ class ModelData:
         self.val_data_split = val_data_split
         self.test_data_split = test_data_split
         self.model_result = None
-    def train_model(self):
+    def train_model(self, time_callback = None):
+
+        model_callbacks =  [self.model_history, time_callback] if time_callback is not None else [self.model_history]
         model_result = self.model.fit(self.train_data_split,
-                                  steps_per_epoch=len(self.train_data_split),
-                                  epochs=self.num_of_epochs,
-                                  validation_data=self.val_data_split,
-                                  validation_steps=len(self.val_data_split),
-                                  callbacks=[self.model_history]
-                                  )
+                                      steps_per_epoch=len(self.train_data_split),
+                                      epochs=self.num_of_epochs,
+                                      validation_data=self.val_data_split,
+                                      validation_steps=len(self.val_data_split),
+                                      callbacks = model_callbacks
+                                    )
         self.model_result = model_result
 
     def save_training_history(self, index = None):
@@ -87,7 +104,6 @@ class ModelData:
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
-        plt.clf()
 
         if index is not None:
             plt.grid(True)
@@ -96,7 +112,8 @@ class ModelData:
             plt.grid(True)
             plt.show()
             plt.savefig(f"model.png")
-
+            
+        plt.clf()
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
         plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
         plt.title('Training and Validation Accuracy')
@@ -115,7 +132,7 @@ class ModelData:
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
 
-def find_best(models_data_list: List[ModelData]) -> Optional[int]:
+def find_best_split_1(models_data_list: List[ModelData]) -> Optional[int]:
 
     current_accuracy = 0.0
     best_model_data: Optional[ModelData] = models_data_list[0]
@@ -126,6 +143,10 @@ def find_best(models_data_list: List[ModelData]) -> Optional[int]:
             best_model_data = item
 
     return best_model_data
+
+
+def find_best_split_2(models_data_list: List[ModelData]) -> Optional[int]:
+    pass
 
 def normalise_data(x,y):
     return (x/255, y)
@@ -310,7 +331,9 @@ def load_dataset_and_prepare():
         item.train_model()
         item.save_training_history(index)
 
-    best_num_of_epochs = find_best(models_to_check_list)
+    best_num_of_epochs = find_best_split_1(models_to_check_list)
+
+
 
     best_model_split_1 = ModelData(model_1_epoch_10,
                                    best_num_of_epochs,
@@ -319,6 +342,9 @@ def load_dataset_and_prepare():
                                    test_data_split_1)
 
     best_models_list.append(best_model_split_1)
+
+
+
     for index, item in enumerate(best_models_list):
         item.save_model(index)
 
