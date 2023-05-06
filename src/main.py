@@ -77,15 +77,19 @@ class ModelData:
         self.val_data_split = val_data_split
         self.test_data_split = test_data_split
         self.model_result = None
-    def train_model(self, time_callback = None):
+        self.callback_list = None
+    def train_model(self, callback_list = None):
 
-        model_callbacks =  [self.model_history, time_callback] if time_callback is not None else [self.model_history]
+        if callback_list is not None:
+            self.callback_list = [self.model_history] + callback_list
+        else:
+            self.callback_list = self.model_history
         model_result = self.model.fit(self.train_data_split,
                                       steps_per_epoch=len(self.train_data_split),
                                       epochs=self.num_of_epochs,
                                       validation_data=self.val_data_split,
                                       validation_steps=len(self.val_data_split),
-                                      callbacks = model_callbacks
+                                      callbacks = self.callback_list
                                     )
         self.model_result = model_result
 
@@ -112,7 +116,7 @@ class ModelData:
             plt.grid(True)
             plt.show()
             plt.savefig(f"model.png")
-            
+
         plt.clf()
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
         plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
@@ -134,15 +138,14 @@ class ModelData:
 
 def find_best_split_1(models_data_list: List[ModelData]) -> Optional[int]:
 
-    current_accuracy = 0.0
     best_model_data: Optional[ModelData] = models_data_list[0]
 
     for item in models_data_list:
 
-        if item.model_result.history['accuracy'] >= best_model_data.model_result.history['accuracy']:
+        if item.model_result.history['val_acc'] >= best_model_data.model_result.history['val_acc']:
             best_model_data = item
 
-    return best_model_data
+    return best_model_data.num_of_epochs
 
 
 def find_best_split_2(models_data_list: List[ModelData]) -> Optional[int]:
@@ -317,18 +320,18 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,6):
+    for i in range(1,2):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                10*i,
+                1*i,
                 train_data_split_1,
                 val_data_split_1
             )
         )
 
     for index, item in enumerate(models_to_check_list):
-        item.train_model()
+        item.train_model(TimeHistory())
         item.save_training_history(index)
 
     best_num_of_epochs = find_best_split_1(models_to_check_list)
@@ -341,6 +344,8 @@ def load_dataset_and_prepare():
                                    val_data_split_1,
                                    test_data_split_1)
 
+
+    #best_model_split_1.
     best_models_list.append(best_model_split_1)
 
 
