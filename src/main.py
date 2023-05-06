@@ -1,13 +1,41 @@
 from typing import List, Tuple, Set, Dict
 
 import os, os.path
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import tensorflow as tf
+import keras.utils as ku
 
-BATCH_SIZE: int  = 32
+from keras.callbacks import History
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
+
+#
+# # testing code
+# test_img = os.path.join(data_dir, "paper/cardboard1.jpg")
+# img = ku.load_img(test_img, target_size=(IMAGE_HEIGHT, IMAGE_WIDTH))
+# img = ku.img_to_array(img, dtype=np.uint8)
+# img = np.array(img) / 255.0
+# prediction = model.predict(img[np.newaxis, ...])
+# print("Probability:", np.max(prediction[0], axis=-1))
+# predicted_class = NUMBER_TO_LABEL[np.argmax(prediction[0], axis=-1)]
+# print("Classified:", predicted_class, '\n')
+#
+# plt.axis('off')
+# plt.imshow(img.squeeze())
+# plt.title("Loaded Image")
+# plt.show()
+
+
+IMAGE_WIDTH: int = 256
+IMAGE_HEIGHT: int = 256
+BATCH_SIZE: int = 32
+EPOCHS: int = 1
+
 LABELS_TO_NUMBER = {
     "biological": 0,
     "glass": 1,
@@ -91,9 +119,13 @@ def calculate_orginal_distribution(path: str) -> int:
 
 def load_dataset_and_prepare():
     current_dir: str = os.getcwd()
-    data_dir: str =os.path.join(os.path.dirname(current_dir), 'data')
-    data = tf.keras.utils.image_dataset_from_directory(data_dir)
-    
+    data_dir: str = os.path.join(os.path.dirname(current_dir), 'data')
+
+    data = tf.keras.utils.image_dataset_from_directory(data_dir,
+                                                       class_names=list(LABELS_TO_NUMBER.keys()),
+                                                       image_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
+                                                       batch_size=BATCH_SIZE)
+
     data.as_numpy_iterator().next()
     
     dataset_image_count: int = get_orginal_dataset_size()
@@ -116,18 +148,17 @@ def load_dataset_and_prepare():
     for it, value in enumerate(per_class_proportions):
         split_1_dataset_size+=value
 
-    print(f"SPLIT 1 SIZE: {split_1_dataset_size}")
-    
     train_size = int(split_1_dataset_size*0.7)
     val_size = int(split_1_dataset_size*0.2)
     test_size = int(split_1_dataset_size*0.1)
-    
+
+
     train_data_split_1 = data.take(train_size)
     val_data_split_1 = data.skip(train_size).take(val_size)
     test_data_split_1 = data.skip(train_size+val_size).take(test_size)
 
     #SPLIT 2    
-    uniform_distribution: int  = int(dataset_image_count/ len(NUMBER_TO_LABEL))
+    uniform_distribution: int = int(dataset_image_count / len(NUMBER_TO_LABEL))
 
     per_class_proportions_split_2 = []
 
@@ -139,10 +170,7 @@ def load_dataset_and_prepare():
     for it, value in enumerate(per_class_proportions_split_2):
         split_2_dataset_size+=value
         #print(f"{NUMBER_TO_LABEL[it]}  =  {value}")
-    
-    print(f"SPLIT 2 SIZE: {split_2_dataset_size}")
 
-        
     train_size = int(split_2_dataset_size*0.7)
     val_size = int(split_2_dataset_size*0.2)
     test_size = int(split_2_dataset_size*0.1)
@@ -161,9 +189,85 @@ def load_dataset_and_prepare():
     test_data_split_3 = test_data_split_2
 
     batch = train_data_split_3.as_numpy_iterator().next()
-    
-    #print(batch[0])
-    #print(batch[0].max())
+
+    ##FROM HERE might not work..
+    #We will see...
+
+    history = History()
+    model = Sequential()
+
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', input_shape=(256, 256, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
+    model.add(Flatten())
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(5, activation='softmax'))
+    model.summary()
+
+    model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+    # model_history = model.fit(
+    #     train_data_split_1,
+    #     steps_per_epoch=len(train_data_split_1),
+    #     epochs=EPOCHS,
+    #     validation_data=val_data_split_1,
+    #     validation_steps=len(val_data_split_1),
+    #     callbacks=[history]
+    # )
+
+    model_history = model.fit(
+        train_data_split_1,
+        steps_per_epoch= len(train_data_split_1),
+        epochs= 10,
+        validation_data=val_data_split_1,
+        validation_steps= len(val_data_split_1),
+        callbacks=[history]
+    )
+
+    train_loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    train_acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    epochs = range(1, len(train_loss) + 1)
+
+    plt.plot(epochs, train_loss, 'b', label='Training Loss')
+    plt.plot(epochs, val_loss, 'r', label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.figure()
+
+    plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+    plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.show()
+
+
+    train_loss, train_acc = model.evaluate(train_data_split_1)
+    val_loss, val_acc = model.evaluate(test_data_split_1)
+
+    print('Training loss:', train_loss)
+    print('Training accuracy:', train_acc)
+    print('Validation loss:', val_loss)
+    print('Validation accuracy:', val_acc)
+
+    #model_results = model.evaluate()
+    #model.save('weights/model.h5')
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
@@ -238,6 +342,7 @@ if __name__ == '__main__':
     #for it in list(LABELS_TO_NUMBER.keys()):
     #    histrogram(f"{it}")
     #
+
     load_dataset_and_prepare()
 
 
