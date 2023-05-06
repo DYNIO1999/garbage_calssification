@@ -182,7 +182,7 @@ def create_cnn_model(visualize = False):
     model.add(Dense(5, activation='softmax'))
     model.summary()
 
-    if visualize:
+    #if visualize:
        #visualizer(model, file_format='png', view=True)
 
     model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
