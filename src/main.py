@@ -114,12 +114,16 @@ class ModelData:
         plt.ylabel('Loss')
         plt.legend()
 
+        current_dir: str = os.getcwd()
         if index is not None:
             plt.grid(True)
+
+            os.mkdir(os.path.join(current_dir, f"model_loss_{index}"))
             plt.savefig(os.path.join(f"model_loss_{index}", f"model_loss_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
+            os.mkdir(os.path.join(current_dir, f"model_loss"))
             plt.savefig(os.path.join(f"model_loss", f"model_loss.png"))
 
         plt.clf()
@@ -132,10 +136,12 @@ class ModelData:
 
         if index is not None:
             plt.grid(True)
+            os.mkdir(os.path.join(current_dir, f"model_accuracy_{index}"))
             plt.savefig(os.path.join(f"model_accuracy_{index}", f"model_accuracy_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
+            os.mkdir(os.path.join(current_dir, f"model_accuracy"))
             plt.savefig(os.path.join(f"model_accuracy", f"model_accuracy.png"))
 
     def save_model(self, index = 0):
@@ -423,7 +429,7 @@ def find_min_image_size(image_sizes: List[Tuple[int,int]]) -> Tuple[int,int]:
     return min_width, min_height
 
 if __name__ == '__main__':
-    
+
     image_sizes: List[Tuple[int,int]] = check_image_sizes()
 
     image_size_count: int = len(image_sizes)
