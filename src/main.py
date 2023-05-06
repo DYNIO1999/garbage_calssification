@@ -88,7 +88,11 @@ class ModelData:
         plt.ylabel('Loss')
         plt.legend()
 
-        plt.figure()
+        if index is not None:
+            plt.savefig(f"model_loss_{index}.png")
+        else:
+            plt.show()
+            plt.savefig(f"model.png")
 
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
         plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
@@ -98,10 +102,11 @@ class ModelData:
         plt.legend()
 
         if index is not None:
-            plt.savefig(f"model_{index}.png")
+            plt.savefig(f"model_accuracy_{index}.png")
         else:
             plt.show()
             plt.savefig(f"model.png")
+
 
 def find_best(models_data_list: List[ModelData]) -> Optional[int]:
 
