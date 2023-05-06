@@ -98,7 +98,7 @@ class ModelData:
                                     )
         self.model_result = model_result
 
-    def save_training_history(self, index = None, check_overfitting = true):
+    def save_training_history(self, index = None):
         train_loss = self.model_history.history['loss']
         val_loss = self.model_history.history['val_loss']
 
