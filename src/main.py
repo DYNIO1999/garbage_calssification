@@ -13,7 +13,7 @@ from keras.callbacks import History
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
-from keras_visualizer import visualizer
+#from keras_visualizer import visualizer
 
 #
 # # testing code
@@ -183,7 +183,7 @@ def create_cnn_model(visualize = False):
     model.summary()
 
     if visualize:
-        visualizer(model, file_format='png', view=True)
+       #visualizer(model, file_format='png', view=True)
 
     model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
