@@ -136,7 +136,10 @@ class ModelData:
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
 
-def find_best_split_1(models_data_list: List[ModelData]) -> Optional[int]:
+    def get_callbacks(self):
+        return self.callback_list
+
+def find_best_split_1(models_data_list: List[ModelData]):
 
     best_model_data: Optional[ModelData] = models_data_list[0]
 
@@ -145,7 +148,7 @@ def find_best_split_1(models_data_list: List[ModelData]) -> Optional[int]:
         if item.model_result.history['val_acc'] >= best_model_data.model_result.history['val_acc']:
             best_model_data = item
 
-    return best_model_data.num_of_epochs
+    return best_model_data
 
 
 def find_best_split_2(models_data_list: List[ModelData]) -> Optional[int]:
@@ -324,31 +327,20 @@ def load_dataset_and_prepare():
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                10*i,
+                5*i,
                 train_data_split_1,
                 val_data_split_1
             )
         )
 
     for index, item in enumerate(models_to_check_list):
-        item.train_model(TimeHistory())
+        item.train_model([TimeHistory()])
         item.save_training_history(index)
 
-    best_num_of_epochs = find_best_split_1(models_to_check_list)
+    best_model_split_1 = find_best_split_1(models_to_check_list)
+    list_of_callbacks = best_model_split_1.get_callbacks()
 
-
-
-    best_model_split_1 = ModelData(model_1_epoch_10,
-                                   best_num_of_epochs,
-                                   train_data_split_1,
-                                   val_data_split_1,
-                                   test_data_split_1)
-
-
-    #best_model_split_1.
     best_models_list.append(best_model_split_1)
-
-
 
     for index, item in enumerate(best_models_list):
         item.save_model(index)
