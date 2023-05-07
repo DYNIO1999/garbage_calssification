@@ -16,6 +16,7 @@ from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 #from keras_visualizer import visualizer
+from keras.models import load_model
 
 #
 # # testing code
@@ -147,7 +148,7 @@ class ModelData:
 
         plt.clf()
     def save_model(self, index = 0):
-        self.model.save(f"weights/model_{index}.h5")
+        self.model.save(f"weights/MODEL{index}.h5")
 
     def get_callbacks(self):
         return self.callback_list
@@ -315,19 +316,26 @@ def get_orginal_dataset_size() -> int:
 
 
 def create_cnn_model(visualize = False):
+
     model = Sequential()
 
-    model.add(Conv2D(32, kernel_size=(7, 7), padding='same', input_shape=(256, 256, 3), activation='relu'))
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
+
     model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
 
+    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
     model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
-    model.add(Dropout(0.2))
+
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(5, activation='softmax'))
+
     model.summary()
 
     #if visualize:
@@ -443,10 +451,44 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
             )
         )
 
+    for index, item in enumerate(models_to_check_list):
+        item.train_model([TimeHistory()])
+        item.save_training_history(index)
+
+    best_model_split_1 = find_best_split_1(models_to_check_list)
+
+    print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
+    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+
+    best_models_list.append(best_model_split_1)
+
+    for index, item in enumerate(best_models_list):
+        item.save_model(index)
+
+
+def perform_training_on_split_2(train_data_split, val_data_split, test_data_split = None):
+    cur_dir = os.getcwd()
+    model_dir = os.path.join("models", "MODEL1")
+    best_split_1_model = load_model(os.path.join(os.path.dirname(cur_dir), model_dir))
+    #best_split_1_model.history.history
+
+    best_models_list = []
+    models_to_check_list = []
+
+    for i in range(1, 3):
+        models_to_check_list.append(
+            ModelData(
+                create_cnn_model(),
+                5 * i,
+                train_data_split,
+                val_data_split
+            )
+        )
+
     # item.train_model([TimeHistory()])
 
     for index, item in enumerate(models_to_check_list):
-        item.train_model()
+        item.train_model([TimeHistory()])
         item.save_training_history(index)
 
     best_model_split_1 = find_best_split_1(models_to_check_list)
@@ -455,8 +497,6 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
 
     best_models_list.append(best_model_split_1)
 
-    for index, item in enumerate(best_models_list):
-        item.save_model(index)
 
 
 def check_image_sizes() -> List[Tuple[int, int]]:
