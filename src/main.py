@@ -145,6 +145,7 @@ class ModelData:
             plt.show()
             plt.savefig(os.path.join(f"model", f"model_accuracy.png"))
 
+        plt.clf()
     def save_model(self, index = 0):
         self.model.save(f"weights/model_{index}.h5")
 
@@ -237,13 +238,11 @@ def create_cnn_model(visualize = False):
     model.add(MaxPooling2D(pool_size=2))
     model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
-    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
-    model.add(MaxPooling2D(pool_size=2))
 
     model.add(Flatten())
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(32, activation='relu'))
+    model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(5, activation='softmax'))
     model.summary()
@@ -340,7 +339,7 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,11):
+    for i in range(1,3):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
