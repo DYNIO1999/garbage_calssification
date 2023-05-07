@@ -152,6 +152,92 @@ class ModelData:
     def get_callbacks(self):
         return self.callback_list
 
+    def compare_result(self, best_model_previous_split, index = 0):
+
+        train_loss = self.model_history.history['loss']
+        val_loss = self.model_history.history['val_loss']
+
+        train_acc = self.model_history.history['accuracy']
+        val_acc = self.model_history.history['val_accuracy']
+
+        previous_split_train_loss = best_model_previous_split.model_history.history['loss']
+        previous_val_loss = best_model_previous_split.model_history.history['val_loss']
+
+        previous_split_train_acc = best_model_previous_split.model_history.history['accuracy']
+        previous_split_val_acc = best_model_previous_split.model_history.history['val_accuracy']
+
+        epochs = range(1, len(train_loss) + 1)
+
+        plt.plot(epochs, train_loss, 'b', label='Training Loss')
+        plt.plot(epochs, val_loss, 'r', label='Validation Loss')
+        plt.plot(epochs, previous_split_train_loss, "yellow", label='Previous Split Train Loss')
+        plt.plot(epochs, previous_val_loss, "orange", label='Previous Split Validation Loss')
+        plt.title('Training and Validation Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+
+        current_dir: str = os.getcwd()
+        if index is not None:
+            os.mkdir(os.path.join(current_dir, f"model_{index}"))
+        else:
+            os.mkdir(os.path.join(current_dir, f"model"))
+
+        if index is not None:
+            plt.grid(True)
+            plt.savefig(os.path.join(f"model_{index}", f"model_loss_{index}.png"))
+        else:
+            plt.grid(True)
+            plt.show()
+
+            plt.savefig(os.path.join(f"model", f"model_loss.png"))
+
+        plt.clf()
+        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+        plt.plot(epochs, previous_split_train_acc, "yellow", label='Previous Split Train Accuracy')
+        plt.plot(epochs, previous_split_val_acc, "orange", label='Previous Split Validation Accuracy')
+        plt.title('Training and Validation Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend()
+
+        if index is not None:
+            plt.grid(True)
+            plt.savefig(os.path.join(f"model_{index}", f"model_accuracy_{index}.png"))
+        else:
+            plt.grid(True)
+            plt.show()
+            plt.savefig(os.path.join(f"model", f"model_accuracy.png"))
+
+        plt.clf()
+
+        time_spend_per_epoch = self.callback_list[CALLBACK_TO_INDEX["TIME"]]
+        previous_time_spend_per_epoch = best_model_previous_split.callback_list[CALLBACK_TO_INDEX["TIME"]]
+
+        epochs = range(1, len(time_spend_per_epoch) + 1)
+
+        plt.plot(epochs, time_spend_per_epoch, 'r', label='Time')
+        plt.plot(epochs, previous_time_spend_per_epoch, 'b', label='Time')
+        plt.title('Time comparison')
+        plt.xlabel('Epochs')
+        plt.ylabel('Time')
+        plt.legend()
+
+        if index is not None:
+            plt.grid(True)
+            plt.savefig(os.path.join(f"model_{index}", f"model_time_comparison_{index}.png"))
+        else:
+            plt.grid(True)
+            plt.show()
+
+            plt.savefig(os.path.join(f"model", f"model_time_comparison.png"))
+
+
+
+        plt.clf()
+
+
 def find_best_split_1(models_data_list: List[ModelData]):
 
     best_model_data: Optional[ModelData] = models_data_list[0]
@@ -165,9 +251,6 @@ def find_best_split_1(models_data_list: List[ModelData]):
 
     return best_model_data
 
-
-def find_best_split_2(models_data_list: List[ModelData]) -> Optional[int]:
-    pass
 
 def normalise_data(x,y):
     return (x/255, y)
@@ -240,8 +323,6 @@ def create_cnn_model(visualize = False):
     model.add(MaxPooling2D(pool_size=2))
 
     model.add(Flatten())
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(64, activation='relu'))
@@ -335,20 +416,34 @@ def load_dataset_and_prepare():
     val_data_split_3 = val_data_split_2
     test_data_split_3 = test_data_split_2
 
+
+    #training split 1
+    perform_training_on_split_1(train_data_split_1, val_data_split_1)
+
+    #overfiting
+
+
+    #training split 2
+
+
+    #training split 3
+
+
+def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
     best_models_list = []
     models_to_check_list = []
 
-    for i in range(1,3):
+    for i in range(1, 3):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
-                5*i,
-                train_data_split_1,
-                val_data_split_1
+                5 * i,
+                train_data_split,
+                val_data_split
             )
         )
 
-    #item.train_model([TimeHistory()])
+    # item.train_model([TimeHistory()])
 
     for index, item in enumerate(models_to_check_list):
         item.train_model()
@@ -363,23 +458,6 @@ def load_dataset_and_prepare():
     for index, item in enumerate(best_models_list):
         item.save_model(index)
 
-    #list_of_callbacks = best_model_split_1.get_callbacks()
-    #test = list_of_callbacks[CALLBACK_TO_INDEX["TIME"]]
-
-
-    #Verify best and save
-    #found best epoch number and over fit it
-
-    # train_loss, train_acc = model.evaluate(train_data_split_1)
-    # val_loss, val_acc = model.evaluate(test_data_split_1)
-    #
-    # print('Training loss:', train_loss)
-    # print('Training accuracy:', train_acc)
-    # print('Validation loss:', val_loss)
-    # print('Validation accuracy:', val_acc)
-
-    # #model_results = model.evaluate()
-    # #model.save('weights/model.h5')
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
