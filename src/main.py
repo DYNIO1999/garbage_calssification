@@ -39,7 +39,7 @@ from keras.models import load_model
 IMAGE_WIDTH: int = 256
 IMAGE_HEIGHT: int = 256
 BATCH_SIZE: int = 32
-EPOCHS: int = 1
+NUMBER_OF_EPOCHS: int = 10
 
 LABELS_TO_NUMBER = {
     "biological": 0,
@@ -315,7 +315,7 @@ def get_orginal_dataset_size() -> int:
     return count
 
 
-def create_cnn_model(visualize = False):
+def create_first_cnn_model(visualize = False):
 
     model = Sequential()
 
@@ -335,6 +335,54 @@ def create_cnn_model(visualize = False):
     model.add(Dense(64, activation='relu'))
     model.add(Dense(5, activation='softmax'))
 
+    model.summary()
+
+    #if visualize:
+       #visualizer(model, file_format='png', view=True)
+
+    model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+def create_second_cnn_model(visualize = False):
+
+    model = Sequential()
+
+    model.add(Conv2D(32, kernel_size=(2, 2), padding='same', input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
+    model.add(Conv2D(64, kernel_size=(2, 2), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
+
+    model.add(Flatten())
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))
+
+    model.add(Dropout(0.2))
+    model.add(Dense(5, activation='softmax'))
+
+    model.summary()
+
+    #if visualize:
+       #visualizer(model, file_format='png', view=True)
+
+    model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+
+def create_third_cnn_model(visualize=False):
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), padding='same', input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Conv2D(32, (3, 3), padding='same', activation='relu'))
+
+    model.add(MaxPooling2D(pool_size=2))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(5, activation='softmax'))
     model.summary()
 
     #if visualize:
@@ -425,13 +473,13 @@ def load_dataset_and_prepare():
 
 
     #training split 1
-    #perform_training_on_split_1(train_data_split_1, val_data_split_1)
+    perform_training_on_split_1(train_data_split_1, val_data_split_1)
 
     #overfiting
     #perform_overfitting_split_1(test_data_split_1, train_data_split_1)
 
     #training split 2
-    perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
+    #perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
 
     #training split 3
     #perform_training_on_split_3(train_data_split_3, val_data_split_3)
@@ -440,15 +488,32 @@ def load_dataset_and_prepare():
 def perform_training_on_split_3(train_data_split, val_data_split):
     models_to_check_list = []
 
-    for i in range(1, 6):
-        models_to_check_list.append(
+    models_to_check_list.append(
             ModelData(
-                create_cnn_model(),
-                5 * i,
+                create_first_cnn_model(),
+                NUMBER_OF_EPOCHS,
                 train_data_split,
                 val_data_split
             )
-        )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_second_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                train_data_split,
+                val_data_split
+            )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_third_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                train_data_split,
+                val_data_split
+            )
+    )
 
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
@@ -460,11 +525,11 @@ def perform_training_on_split_3(train_data_split, val_data_split):
     print(f"Best model for split_3 based on epoch: {best_model_split_1.num_of_epochs}")
     save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
 
-    best_model_split_1.save_model(1)
+    best_model_split_1.save_model(3)
 
 
 def perform_overfitting_split_1(train_data_split, val_data_split):
-    model_test = ModelData(create_cnn_model(),
+    model_test = ModelData(create_first_cnn_model(),
                            50,
                            train_data_split,
                            val_data_split
@@ -475,15 +540,32 @@ def perform_overfitting_split_1(train_data_split, val_data_split):
 def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
     models_to_check_list = []
 
-    for i in range(1, 6):
-        models_to_check_list.append(
+    models_to_check_list.append(
             ModelData(
-                create_cnn_model(),
-                5 * i,
+                create_first_cnn_model(),
+                NUMBER_OF_EPOCHS,
                 train_data_split,
                 val_data_split
             )
-        )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_second_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                train_data_split,
+                val_data_split
+            )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_third_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                train_data_split,
+                val_data_split
+            )
+    )
 
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
@@ -501,7 +583,7 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
 def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                                 first_train_data_split, first_val_data_split):
 
-    best_split_1_model = ModelData(create_cnn_model(),
+    best_split_1_model = ModelData(create_first_cnn_model(),
                                            10, # explicit best from previous run
                                            first_train_data_split,
                                            first_val_data_split)
@@ -509,15 +591,32 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
 
     models_to_check_list = []
 
-    for i in range(1, 6):
-        models_to_check_list.append(
+    models_to_check_list.append(
             ModelData(
-                create_cnn_model(),
-                5 * i,
+                create_first_cnn_model(),
+                NUMBER_OF_EPOCHS,
                 second_train_data_split,
                 second_val_data_split
             )
-        )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_second_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                second_train_data_split,
+                second_val_data_split
+            )
+    )
+
+    models_to_check_list.append(
+            ModelData(
+                create_third_cnn_model(),
+                NUMBER_OF_EPOCHS,
+                second_train_data_split,
+                second_val_data_split
+            )
+    )
 
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
