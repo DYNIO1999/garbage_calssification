@@ -453,6 +453,7 @@ def perform_training_on_split_3(train_data_split, val_data_split):
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
         item.save_training_history(index)
+        item.test_model()
 
     best_model_split_1 = find_best_model(models_to_check_list)
 
