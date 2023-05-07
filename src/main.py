@@ -340,11 +340,11 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,11):
+    for i in range(1,2):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                5*i,
+                1*i,
                 train_data_split_1,
                 val_data_split_1
             )
@@ -358,7 +358,7 @@ def load_dataset_and_prepare():
 
     best_model_split_1 = find_best_split_1(models_to_check_list)
     print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
-    save_to_file(os.path.join(current_dir, "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
 
     best_models_list.append(best_model_split_1)
 
