@@ -76,7 +76,8 @@ CALLBACK_TO_INDEX = {
     "TIME": 1
 }
 class ModelData:
-    def __init__(self, model, num_of_epochs, train_data_split, val_data_split, test_data_split = None):
+    def __init__(self, model, num_of_epochs, train_data_split, val_data_split, test_data_split = None , model_index = 0):
+        self.model_index = model_index
         self.model = model
         self.model_history = History()
         self.num_of_epochs = num_of_epochs
@@ -492,7 +493,8 @@ def perform_training_on_split_3(train_data_split, val_data_split):
                 create_first_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index = 0
             )
     )
 
@@ -501,7 +503,8 @@ def perform_training_on_split_3(train_data_split, val_data_split):
                 create_second_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index = 1
             )
     )
 
@@ -510,7 +513,8 @@ def perform_training_on_split_3(train_data_split, val_data_split):
                 create_third_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index = 2
             )
     )
 
@@ -519,12 +523,12 @@ def perform_training_on_split_3(train_data_split, val_data_split):
         item.save_training_history(index)
         item.test_model()
 
-    best_model_split_1 = find_best_model(models_to_check_list)
+    best_model_split_3 = find_best_model(models_to_check_list)
 
-    print(f"Best model for split_3 based on epoch: {best_model_split_1.num_of_epochs}")
-    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+    print(f"Best model for split 3 is: {best_model_split_3.model_index}")
+    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_3.model_index)
 
-    best_model_split_1.save_model(3)
+    best_model_split_3.save_model(3)
 
 
 def perform_overfitting_split_1(train_data_split, val_data_split):
@@ -544,7 +548,8 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
                 create_first_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index=0
             )
     )
 
@@ -553,7 +558,8 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
                 create_second_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index=1
             )
     )
 
@@ -562,7 +568,8 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
                 create_third_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 train_data_split,
-                val_data_split
+                val_data_split,
+                model_index=2
             )
     )
 
@@ -573,8 +580,10 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
 
     best_model_split_1 = find_best_model(models_to_check_list)
 
-    print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
-    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+    print(f"Best model for split_1 is: {best_model_split_1.model_index}")
+    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_1.model_index)
+
+
 
     best_model_split_1.save_model(1)
 
@@ -595,7 +604,8 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                 create_first_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 second_train_data_split,
-                second_val_data_split
+                second_val_data_split,
+                model_index = 0
             )
     )
 
@@ -604,7 +614,8 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                 create_second_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 second_train_data_split,
-                second_val_data_split
+                second_val_data_split,
+                model_index=1
             )
     )
 
@@ -613,7 +624,8 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                 create_third_cnn_model(),
                 NUMBER_OF_EPOCHS,
                 second_train_data_split,
-                second_val_data_split
+                second_val_data_split,
+                model_index=2
             )
     )
 
@@ -625,9 +637,8 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
 
 
     best_model_split_2 = find_best_model(models_to_check_list)
-    print(f"Best model for split_2 based on epoch: {best_model_split_2.num_of_epochs}")
-    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_2.num_of_epochs)
-
+    print(f"Best model split 2 is: {best_model_split_2.model_index}")
+    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_2.model_index)
 
     best_model_split_2.save_model(2)
 
