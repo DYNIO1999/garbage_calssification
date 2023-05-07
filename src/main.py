@@ -241,9 +241,11 @@ def create_cnn_model(visualize = False):
 
     model.add(Flatten())
     model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.3))
     model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
+    model.add(Dropout(0.3))
     model.add(Dense(5, activation='softmax'))
     model.summary()
 
@@ -336,13 +338,10 @@ def load_dataset_and_prepare():
     best_models_list = []
     models_to_check_list = []
 
-    model_1_epoch_10 = create_cnn_model()
-
-
     for i in range(1,3):
         models_to_check_list.append(
             ModelData(
-                model_1_epoch_10,
+                create_cnn_model(),
                 5*i,
                 train_data_split_1,
                 val_data_split_1
