@@ -340,11 +340,11 @@ def load_dataset_and_prepare():
     model_1_epoch_10 = create_cnn_model()
 
 
-    for i in range(1,2):
+    for i in range(1,11):
         models_to_check_list.append(
             ModelData(
                 model_1_epoch_10,
-                1*i,
+                5*i,
                 train_data_split_1,
                 val_data_split_1
             )
