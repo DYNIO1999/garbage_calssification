@@ -85,6 +85,8 @@ class ModelData:
         self.test_data_split = test_data_split
         self.model_result = None
         self.callback_list = None
+        self.accuracy_tested = None
+        self.loss_tested = None
     def train_model(self, callback_list = None):
 
         if callback_list is not None:
@@ -96,8 +98,7 @@ class ModelData:
                                       epochs=self.num_of_epochs,
                                       validation_data=self.val_data_split,
                                       validation_steps=len(self.val_data_split),
-                                      callbacks = self.callback_list
-                                    )
+                                      callbacks = self.callback_list)
         self.model_result = model_result
 
     def save_training_history(self, index = None):
@@ -235,14 +236,17 @@ class ModelData:
         plt.clf()
 
 
-def find_best_split_1(models_data_list: List[ModelData]):
+    def test_model(self):
+            self.accuracy_tested, self.loss_tested = self.model.evaluate(self.val_data_split)
+
+def find_best_model(models_data_list: List[ModelData]):
 
     best_model_data: Optional[ModelData] = models_data_list[0]
 
     for item in models_data_list:
 
-        if item.model_result.history['val_accuracy'][-1] >= best_model_data.model_result.history['val_accuracy'][-1] \
-                and item.model_result.history['val_loss'][-1] <= (2*best_model_data.model_result.history['val_loss'][-1]):
+        if item.accuracy_tested >= best_model_data.accuracy_tested \
+                and item.loss_tested <= best_model_data.loss_tested:
 
             best_model_data = item
 
@@ -427,17 +431,45 @@ def load_dataset_and_prepare():
     #perform_overfitting_split_1(test_data_split_1, train_data_split_1)
 
     #training split 2
-    #perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
+    perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
 
     #training split 3
+    #perform_training_on_split_3(train_data_split_3, val_data_split_3)
+
+
+def perform_training_on_split_3(train_data_split, val_data_split):
+    models_to_check_list = []
+
+    for i in range(1, 6):
+        models_to_check_list.append(
+            ModelData(
+                create_cnn_model(),
+                5 * i,
+                train_data_split,
+                val_data_split
+            )
+        )
+
+    for index, item in enumerate(models_to_check_list):
+        item.train_model([TimeHistory()])
+        item.save_training_history(index)
+
+    best_model_split_1 = find_best_model(models_to_check_list)
+
+    print(f"Best model for split_3 based on epoch: {best_model_split_1.num_of_epochs}")
+    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+
+    best_model_split_1.save_model(1)
+
 
 def perform_overfitting_split_1(train_data_split, val_data_split):
-        model_test = ModelData(create_cnn_model(),
-                               20,
-                               train_data_split,
-                               val_data_split
-                               )
-        model_test.save_training_history(0)
+    model_test = ModelData(create_cnn_model(),
+                           50,
+                           train_data_split,
+                           val_data_split
+                           )
+    model_test.train_model([TimeHistory()])
+    model_test.save_training_history(0)
 
 def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
     models_to_check_list = []
@@ -455,8 +487,9 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
         item.save_training_history(index)
+        item.test_model()
 
-    best_model_split_1 = find_best_split_1(models_to_check_list)
+    best_model_split_1 = find_best_model(models_to_check_list)
 
     print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
     save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
@@ -468,18 +501,18 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                                 first_train_data_split, first_val_data_split):
 
     best_split_1_model = ModelData(create_cnn_model(),
-                                           10, # explicit best from previous run
+                                           1, # explicit best from previous run
                                            first_train_data_split,
                                            first_val_data_split)
     best_split_1_model.train_model([TimeHistory()])
 
     models_to_check_list = []
 
-    for i in range(1, 5):
+    for i in range(1, 2):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
-                5 * i,
+                1 * i,
                 second_train_data_split,
                 second_val_data_split
             )
@@ -489,10 +522,13 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
         item.train_model([TimeHistory()])
         item.save_training_history(index)
         item.compare_result(copy.copy(best_split_1_model.model_history), copy.copy(best_split_1_model.callback_list), index)
+        item.test_model()
 
-    best_model_split_2 = find_best_split_1(models_to_check_list)
-    print(f"Best model for split_1 based on epoch: {best_model_split_2.num_of_epochs}")
+
+    best_model_split_2 = find_best_model(models_to_check_list)
+    print(f"Best model for split_2 based on epoch: {best_model_split_2.num_of_epochs}")
     save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_2.num_of_epochs)
+
 
     best_model_split_2.save_model(2)
 
