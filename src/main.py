@@ -584,7 +584,7 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                                 first_train_data_split, first_val_data_split):
 
     best_split_1_model = ModelData(create_first_cnn_model(),
-                                           10, # explicit best from previous run
+                                           NUMBER_OF_EPOCHS, # explicit best from previous run
                                            first_train_data_split,
                                            first_val_data_split)
     best_split_1_model.train_model([TimeHistory()])
