@@ -148,7 +148,9 @@ class ModelData:
 
         plt.clf()
     def save_model(self, index = 0):
-        self.model.save(f"weights/MODEL{index}.h5")
+        cur_dir = os.getcwd()
+        path = os.path.join(os.path.dirname(cur_dir), "models")
+        self.model.save(os.path.join(path, f"MODEL{index}.h5"))
 
     def get_callbacks(self):
         return self.callback_list
@@ -246,7 +248,7 @@ def find_best_split_1(models_data_list: List[ModelData]):
     for item in models_data_list:
 
         if item.model_result.history['val_accuracy'][-1] >= best_model_data.model_result.history['val_accuracy'][-1] \
-                and item.model_result.history['val_loss'][-1] <= best_model_data.model_result.history['val_loss'][-1]:
+                and item.model_result.history['val_loss'][-1] <= (2*best_model_data.model_result.history['val_loss'][-1]):
 
             best_model_data = item
 
@@ -432,16 +434,15 @@ def load_dataset_and_prepare():
 
 
     #training split 2
-
+    #perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
 
     #training split 3
 
 
 def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
-    best_models_list = []
     models_to_check_list = []
 
-    for i in range(1, 3):
+    for i in range(1, 6):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
@@ -460,44 +461,40 @@ def perform_training_on_split_1(train_data_split, val_data_split, test_data_spli
     print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
     save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
 
-    best_models_list.append(best_model_split_1)
-
-    for index, item in enumerate(best_models_list):
-        item.save_model(index)
+    best_model_split_1.save_model(1)
 
 
-def perform_training_on_split_2(train_data_split, val_data_split, test_data_split = None):
-    cur_dir = os.getcwd()
-    model_dir = os.path.join("models", "MODEL1")
-    best_split_1_model = load_model(os.path.join(os.path.dirname(cur_dir), model_dir))
-    #best_split_1_model.history.history
+def perform_training_on_split_2(second_train_data_split, second_val_data_split,
+                                first_train_data_split, first_val_data_split):
 
-    best_models_list = []
+    best_split_1_model = ModelData(create_cnn_model(),
+                                           2,
+                                           first_train_data_split,
+                                           first_val_data_split)
+    best_split_1_model.train_model([TimeHistory()])
+
     models_to_check_list = []
 
-    for i in range(1, 3):
+    for i in range(1, 2):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
-                5 * i,
-                train_data_split,
-                val_data_split
+                1 * i,
+                second_train_data_split,
+                second_val_data_split
             )
         )
-
-    # item.train_model([TimeHistory()])
 
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
         item.save_training_history(index)
+        item.compare_result(best_split_1_model, index)
 
-    best_model_split_1 = find_best_split_1(models_to_check_list)
-    print(f"Best model for split_1 based on epoch: {best_model_split_1.num_of_epochs}")
-    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_1.num_of_epochs)
+    best_model_split_2 = find_best_split_1(models_to_check_list)
+    print(f"Best model for split_1 based on epoch: {best_model_split_2.num_of_epochs}")
+    save_to_file(os.path.join(os.getcwd(), "best_result_epoch.txt"), best_model_split_2.num_of_epochs)
 
-    best_models_list.append(best_model_split_1)
-
-
+    best_model_split_2.save_model(2)
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
