@@ -245,8 +245,7 @@ def find_best_model(models_data_list: List[ModelData]):
 
     for item in models_data_list:
 
-        if item.accuracy_tested >= best_model_data.accuracy_tested \
-                and item.loss_tested <= best_model_data.loss_tested:
+        if item.accuracy_tested >= best_model_data.accuracy_tested:
 
             best_model_data = item
 
