@@ -1,3 +1,4 @@
+import copy
 from typing import List, Tuple, Set, Dict, Optional
 
 import time
@@ -155,7 +156,7 @@ class ModelData:
     def get_callbacks(self):
         return self.callback_list
 
-    def compare_result(self, best_model_previous_split, index = 0):
+    def compare_result(self, best_model_previous_split_history,best_model_previous_split_callbacks, index = 0):
 
         train_loss = self.model_history.history['loss']
         val_loss = self.model_history.history['val_loss']
@@ -163,43 +164,40 @@ class ModelData:
         train_acc = self.model_history.history['accuracy']
         val_acc = self.model_history.history['val_accuracy']
 
-        previous_split_train_loss = best_model_previous_split.model_history.history['loss']
-        previous_val_loss = best_model_previous_split.model_history.history['val_loss']
+        previous_split_train_loss = best_model_previous_split_history.history['loss']
+        previous_val_loss = best_model_previous_split_history.history['val_loss']
 
-        previous_split_train_acc = best_model_previous_split.model_history.history['accuracy']
-        previous_split_val_acc = best_model_previous_split.model_history.history['val_accuracy']
+        previous_split_train_acc = best_model_previous_split_history.history['accuracy']
+        previous_split_val_acc = best_model_previous_split_history.history['val_accuracy']
 
-        epochs = range(1, len(train_loss) + 1)
 
-        plt.plot(epochs, train_loss, 'b', label='Training Loss')
-        plt.plot(epochs, val_loss, 'r', label='Validation Loss')
-        plt.plot(epochs, previous_split_train_loss, "yellow", label='Previous Split Train Loss')
-        plt.plot(epochs, previous_val_loss, "orange", label='Previous Split Validation Loss')
+        size = min(len(previous_split_train_loss), len(train_loss))
+
+        epochs = range(1, size + 1)
+
+        plt.plot(epochs, train_loss[:size], 'b', label='Training Loss')
+        plt.plot(epochs, val_loss[:size], 'r', label='Validation Loss')
+        plt.plot(epochs, previous_split_train_loss[:size], "yellow", label='Previous Split Train Loss')
+        plt.plot(epochs, previous_val_loss[:size], "orange", label='Previous Split Validation Loss')
         plt.title('Training and Validation Loss')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
 
-        current_dir: str = os.getcwd()
-        if index is not None:
-            os.mkdir(os.path.join(current_dir, f"model_{index}"))
-        else:
-            os.mkdir(os.path.join(current_dir, f"model"))
-
         if index is not None:
             plt.grid(True)
-            plt.savefig(os.path.join(f"model_{index}", f"model_loss_{index}.png"))
+            plt.savefig(os.path.join(f"model_{index}", f"model_loss_compare_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
 
-            plt.savefig(os.path.join(f"model", f"model_loss.png"))
+            plt.savefig(os.path.join(f"model", f"model_loss_compare.png"))
 
         plt.clf()
-        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
-        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
-        plt.plot(epochs, previous_split_train_acc, "yellow", label='Previous Split Train Accuracy')
-        plt.plot(epochs, previous_split_val_acc, "orange", label='Previous Split Validation Accuracy')
+        plt.plot(epochs, train_acc[:size], 'b', label='Training Accuracy')
+        plt.plot(epochs, val_acc[:size], 'r', label='Validation Accuracy')
+        plt.plot(epochs, previous_split_train_acc[:size], "yellow", label='Previous Split Train Accuracy')
+        plt.plot(epochs, previous_split_val_acc[:size], "orange", label='Previous Split Validation Accuracy')
         plt.title('Training and Validation Accuracy')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
@@ -207,21 +205,20 @@ class ModelData:
 
         if index is not None:
             plt.grid(True)
-            plt.savefig(os.path.join(f"model_{index}", f"model_accuracy_{index}.png"))
+            plt.savefig(os.path.join(f"model_{index}", f"model_accuracy_compare_{index}.png"))
         else:
             plt.grid(True)
             plt.show()
-            plt.savefig(os.path.join(f"model", f"model_accuracy.png"))
+            plt.savefig(os.path.join(f"model", f"model_accuracy_compare.png"))
 
         plt.clf()
 
-        time_spend_per_epoch = self.callback_list[CALLBACK_TO_INDEX["TIME"]]
-        previous_time_spend_per_epoch = best_model_previous_split.callback_list[CALLBACK_TO_INDEX["TIME"]]
+        time_spend_per_epoch = self.callback_list[CALLBACK_TO_INDEX["TIME"]].times
+        previous_time_spend_per_epoch = best_model_previous_split_callbacks[CALLBACK_TO_INDEX["TIME"]].times
 
-        epochs = range(1, len(time_spend_per_epoch) + 1)
 
-        plt.plot(epochs, time_spend_per_epoch, 'r', label='Time')
-        plt.plot(epochs, previous_time_spend_per_epoch, 'b', label='Time')
+        plt.plot(epochs, time_spend_per_epoch[:size], 'r', label='Time')
+        plt.plot(epochs, previous_time_spend_per_epoch[:size], 'b', label='Time')
         plt.title('Time comparison')
         plt.xlabel('Epochs')
         plt.ylabel('Time')
@@ -235,9 +232,6 @@ class ModelData:
             plt.show()
 
             plt.savefig(os.path.join(f"model", f"model_time_comparison.png"))
-
-
-
         plt.clf()
 
 
@@ -321,21 +315,20 @@ def create_cnn_model(visualize = False):
 
     model = Sequential()
 
-    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), activation='relu'))
+    model.add(Conv2D(32, kernel_size=(2, 2), padding='same', input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
 
-    model.add(Conv2D(64, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(Conv2D(64, kernel_size=(2, 2), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
 
-    model.add(Conv2D(32, kernel_size=(3, 3), padding='same', activation='relu'))
+    model.add(Conv2D(64, kernel_size=(2, 2), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=2))
+
+    model.add(Conv2D(32, kernel_size=(2, 2), padding='same', activation='relu'))
     model.add(MaxPooling2D(pool_size=2))
 
     model.add(Flatten())
-
     model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.2))
     model.add(Dense(5, activation='softmax'))
 
     model.summary()
@@ -428,16 +421,23 @@ def load_dataset_and_prepare():
 
 
     #training split 1
-    perform_training_on_split_1(train_data_split_1, val_data_split_1)
+    #perform_training_on_split_1(train_data_split_1, val_data_split_1)
 
     #overfiting
-
+    #perform_overfitting_split_1(test_data_split_1, train_data_split_1)
 
     #training split 2
     #perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
 
     #training split 3
 
+def perform_overfitting_split_1(train_data_split, val_data_split):
+        model_test = ModelData(create_cnn_model(),
+                               20,
+                               train_data_split,
+                               val_data_split
+                               )
+        model_test.save_training_history(0)
 
 def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
     models_to_check_list = []
@@ -468,18 +468,18 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                                 first_train_data_split, first_val_data_split):
 
     best_split_1_model = ModelData(create_cnn_model(),
-                                           2,
+                                           10, # explicit best from previous run
                                            first_train_data_split,
                                            first_val_data_split)
     best_split_1_model.train_model([TimeHistory()])
 
     models_to_check_list = []
 
-    for i in range(1, 2):
+    for i in range(1, 5):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
-                1 * i,
+                5 * i,
                 second_train_data_split,
                 second_val_data_split
             )
@@ -488,7 +488,7 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
     for index, item in enumerate(models_to_check_list):
         item.train_model([TimeHistory()])
         item.save_training_history(index)
-        item.compare_result(best_split_1_model, index)
+        item.compare_result(copy.copy(best_split_1_model.model_history), copy.copy(best_split_1_model.callback_list), index)
 
     best_model_split_2 = find_best_split_1(models_to_check_list)
     print(f"Best model for split_1 based on epoch: {best_model_split_2.num_of_epochs}")
