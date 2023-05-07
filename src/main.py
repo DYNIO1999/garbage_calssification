@@ -237,7 +237,7 @@ class ModelData:
 
 
     def test_model(self):
-            self.accuracy_tested, self.loss_tested = self.model.evaluate(self.val_data_split)
+            self.loss_tested, self.accuracy_tested = self.model.evaluate(self.val_data_split)
 
 def find_best_model(models_data_list: List[ModelData]):
 
@@ -502,18 +502,18 @@ def perform_training_on_split_2(second_train_data_split, second_val_data_split,
                                 first_train_data_split, first_val_data_split):
 
     best_split_1_model = ModelData(create_cnn_model(),
-                                           1, # explicit best from previous run
+                                           10, # explicit best from previous run
                                            first_train_data_split,
                                            first_val_data_split)
     best_split_1_model.train_model([TimeHistory()])
 
     models_to_check_list = []
 
-    for i in range(1, 2):
+    for i in range(1, 6):
         models_to_check_list.append(
             ModelData(
                 create_cnn_model(),
-                1 * i,
+                5 * i,
                 second_train_data_split,
                 second_val_data_split
             )
