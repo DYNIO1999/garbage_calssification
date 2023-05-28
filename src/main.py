@@ -1,9 +1,17 @@
 import copy
 from typing import List, Tuple, Set, Dict, Optional
+from sklearn.metrics import classification_report
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 import time
 import os, os.path
+
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+from colorama import Fore
+from keras import regularizers
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,15 +19,15 @@ import cv2
 import tensorflow as tf
 import keras.utils as ku
 
-from keras.callbacks import History
+from keras.callbacks import History, ModelCheckpoint
 from keras.callbacks import Callback
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
-#from keras_visualizer import visualizer
+from keras_visualizer import visualizer
 from keras.models import load_model
+from tensorflow.keras.metrics import CategoricalAccuracy
 
-#
 # # testing code
 # test_img = os.path.join(data_dir, "paper/cardboard1.jpg")
 # img = ku.load_img(test_img, target_size=(IMAGE_HEIGHT, IMAGE_WIDTH))
@@ -39,7 +47,7 @@ from keras.models import load_model
 IMAGE_WIDTH: int = 256
 IMAGE_HEIGHT: int = 256
 BATCH_SIZE: int = 32
-NUMBER_OF_EPOCHS: int = 10
+NUMBER_OF_EPOCHS: int = 50
 
 LABELS_TO_NUMBER = {
     "biological": 0,
@@ -102,6 +110,8 @@ class ModelData:
                                       callbacks = self.callback_list)
         self.model_result = model_result
 
+        return model_result
+
     def save_training_history(self, index = None):
         train_loss = self.model_history.history['loss']
         val_loss = self.model_history.history['val_loss']
@@ -150,10 +160,23 @@ class ModelData:
             plt.savefig(os.path.join(f"model", f"model_accuracy.png"))
 
         plt.clf()
-    def save_model(self, index = 0):
+
+    @staticmethod
+    def create_checkpoint_callback():
+
+        cur_dir = os.getcwd()
+
+        path = os.path.join(os.path.dirname(cur_dir), "checkpoints_models")
+        checkpoint_filepath = f"{path}//MODEL_epoch{{epoch:02d}}.h5"
+        checkpoint_callback = ModelCheckpoint(checkpoint_filepath, monitor='val_accuracy',
+                                              save_weights_only=False, save_best_only=True,
+                                              verbose=1)
+        return checkpoint_callback
+
+    def save_model(self, name):
         cur_dir = os.getcwd()
         path = os.path.join(os.path.dirname(cur_dir), "models")
-        self.model.save(os.path.join(path, f"MODEL{index}.h5"))
+        self.model.save(os.path.join(path, f"MODEL_{name}.h5"))
 
     def get_callbacks(self):
         return self.callback_list
@@ -237,8 +260,9 @@ class ModelData:
         plt.clf()
 
 
-    def test_model(self):
-            self.loss_tested, self.accuracy_tested = self.model.evaluate(self.val_data_split)
+    def test_model(self, data_split):
+            self.loss_tested, self.accuracy_tested = self.model.evaluate(data_split)
+            return self.accuracy_tested
 
 def find_best_model(models_data_list: List[ModelData]):
 
@@ -336,9 +360,6 @@ def create_first_cnn_model(visualize = False):
     model.add(Dense(5, activation='softmax'))
 
     model.summary()
-
-    #if visualize:
-       #visualizer(model, file_format='png', view=True)
 
     model.compile(optimizer='Adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
@@ -473,62 +494,90 @@ def load_dataset_and_prepare():
 
 
     #training split 1
-    perform_training_on_split_1(train_data_split_1, val_data_split_1)
+    #perform_training_on_split_1(train_data_split_1, val_data_split_1)
 
     #overfiting
     #perform_overfitting_split_1(test_data_split_1, train_data_split_1)
 
     #training split 2
-    #perform_training_on_split_2(train_data_split_2, val_data_split_2, train_data_split_1, val_data_split_1)
+    #perform_training_on_split_2(train_data_split_2, val_data_split_2)
 
     #training split 3
     #perform_training_on_split_3(train_data_split_3, val_data_split_3)
 
+    #perform_model_testing(f"../result_models/split_1/MODEL_epoch39.h5", train_data_split_1, "Train_Data_Split_1")
+    #perform_model_testing(f"../result_models/split_1/MODEL_epoch39.h5", val_data_split_1, "Val_Data_Split_1")
+    #perform_model_testing(f"../result_models/split_1/MODEL_epoch39.h5", test_data_split_1, "Test_Data_Split_1")
+
+
+    #perform_model_testing(f"../result_models/split_2/MODEL_epoch49.h5", train_data_split_2, "Train_Data_Split_2")
+    #perform_model_testing(f"../result_models/split_2/MODEL_epoch49.h5", val_data_split_2, "Val_Data_Split_2")
+    #perform_model_testing(f"../result_models/split_2/MODEL_epoch49.h5", test_data_split_2, "Test_Data_Split_2")
+
+
+    #perform_model_testing(f"../result_models/split_3/MODEL_epoch30.h5", train_data_split_3, "Train_Data_Split_3")
+    #perform_model_testing(f"../result_models/split_3/MODEL_epoch30.h5", val_data_split_3, "Val_Data_Split_3")
+    #perform_model_testing(f"../result_models/split_3/MODEL_epoch30.h5", test_data_split_3, "Test_Data_Split_3")
+
+def perform_model_testing(model_path, data_set, data_set_name):
+
+    model_epoch_39 = load_model(model_path)
+
+    predictions = model_epoch_39.predict(data_set, batch_size=BATCH_SIZE, verbose=1)
+    predicted_classes = np.argmax(predictions, axis=1)
+
+    original_labels = []
+    for images, labels in data_set:
+        for i in range(len(images)):
+            original_labels.append(labels[i].numpy())
+
+    report = classification_report(np.array(original_labels), predicted_classes, output_dict=True)
+
+    class_labels = list(report.keys())
+    class_labels.remove('accuracy')
+    class_labels.remove('macro avg')
+    class_labels.remove('weighted avg')
+
+    metrics = ['precision', 'recall', 'f1-score']
+
+    class_metrics = {metric: [] for metric in metrics}
+
+    for label in class_labels:
+        for metric in metrics:
+            class_metrics[metric].append(report[label][metric])
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    x = np.arange(len(class_labels))
+    bar_width = 0.15
+
+    for i, metric in enumerate(metrics):
+        ax.bar(x + (i * bar_width), class_metrics[metric], bar_width, label=metric)
+
+    ax.set_xlabel('Class Labels')
+    ax.set_ylabel('Score')
+    ax.set_title(f"Classification Report Metrics for: {data_set_name}")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([NUMBER_TO_LABEL[int(e)] for e in class_labels])
+
+    ax.legend()
+
+    plt.grid(True)
+    plt.savefig(f"{data_set_name}_metrics_results.png")
 
 def perform_training_on_split_3(train_data_split, val_data_split):
-    models_to_check_list = []
+    model_to_train = ModelData(create_first_cnn_model(),
+                               NUMBER_OF_EPOCHS,
+                               train_data_split,
+                               val_data_split,
+                               model_index=0)
 
-    models_to_check_list.append(
-            ModelData(
-                create_first_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index = 0
-            )
-    )
+    checkpoint_callback = ModelData.create_checkpoint_callback()
 
-    models_to_check_list.append(
-            ModelData(
-                create_second_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index = 1
-            )
-    )
-
-    models_to_check_list.append(
-            ModelData(
-                create_third_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index = 2
-            )
-    )
-
-    for index, item in enumerate(models_to_check_list):
-        item.train_model([TimeHistory()])
-        item.save_training_history(index)
-        item.test_model()
-
-    best_model_split_3 = find_best_model(models_to_check_list)
-
-    print(f"Best model for split 3 is: {best_model_split_3.model_index}")
-    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_3.model_index)
-
-    best_model_split_3.save_model(3)
+    model_to_train.train_model([TimeHistory(), checkpoint_callback])
+    model_to_train.save_training_history(0)
+    model_to_train.test_model(val_data_split)
 
 
 def perform_overfitting_split_1(train_data_split, val_data_split):
@@ -540,107 +589,33 @@ def perform_overfitting_split_1(train_data_split, val_data_split):
     model_test.train_model([TimeHistory()])
     model_test.save_training_history(0)
 
-def perform_training_on_split_1(train_data_split, val_data_split, test_data_split = None):
-    models_to_check_list = []
 
-    models_to_check_list.append(
-            ModelData(
-                create_first_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index=0
-            )
-    )
+def perform_training_on_split_1(train_data_split, val_data_split):
 
-    models_to_check_list.append(
-            ModelData(
-                create_second_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index=1
-            )
-    )
+    model_to_train = ModelData(create_first_cnn_model(),
+                               NUMBER_OF_EPOCHS,
+                               train_data_split,
+                               val_data_split,
+                               model_index=0)
 
-    models_to_check_list.append(
-            ModelData(
-                create_third_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                train_data_split,
-                val_data_split,
-                model_index=2
-            )
-    )
+    checkpoint_callback = ModelData.create_checkpoint_callback()
 
-    for index, item in enumerate(models_to_check_list):
-        item.train_model([TimeHistory()])
-        item.save_training_history(index)
-        item.test_model()
+    model_to_train.train_model([TimeHistory(), checkpoint_callback])
+    model_to_train.save_training_history(0)
+    model_to_train.test_model(val_data_split)
 
-    best_model_split_1 = find_best_model(models_to_check_list)
+def perform_training_on_split_2(second_train_data_split, second_val_data_split):
+    model_to_train = ModelData(create_first_cnn_model(),
+                               NUMBER_OF_EPOCHS,
+                               second_train_data_split,
+                               second_val_data_split,
+                               model_index=0)
 
-    print(f"Best model for split_1 is: {best_model_split_1.model_index}")
-    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_1.model_index)
+    checkpoint_callback = ModelData.create_checkpoint_callback()
 
-
-
-    best_model_split_1.save_model(1)
-
-
-def perform_training_on_split_2(second_train_data_split, second_val_data_split,
-                                first_train_data_split, first_val_data_split):
-
-    best_split_1_model = ModelData(create_first_cnn_model(),
-                                           NUMBER_OF_EPOCHS, # explicit best from previous run
-                                           first_train_data_split,
-                                           first_val_data_split)
-    best_split_1_model.train_model([TimeHistory()])
-
-    models_to_check_list = []
-
-    models_to_check_list.append(
-            ModelData(
-                create_first_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                second_train_data_split,
-                second_val_data_split,
-                model_index = 0
-            )
-    )
-
-    models_to_check_list.append(
-            ModelData(
-                create_second_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                second_train_data_split,
-                second_val_data_split,
-                model_index=1
-            )
-    )
-
-    models_to_check_list.append(
-            ModelData(
-                create_third_cnn_model(),
-                NUMBER_OF_EPOCHS,
-                second_train_data_split,
-                second_val_data_split,
-                model_index=2
-            )
-    )
-
-    for index, item in enumerate(models_to_check_list):
-        item.train_model([TimeHistory()])
-        item.save_training_history(index)
-        item.compare_result(copy.copy(best_split_1_model.model_history), copy.copy(best_split_1_model.callback_list), index)
-        item.test_model()
-
-
-    best_model_split_2 = find_best_model(models_to_check_list)
-    print(f"Best model split 2 is: {best_model_split_2.model_index}")
-    save_to_file(os.path.join(os.getcwd(), "best_result.txt"), best_model_split_2.model_index)
-
-    best_model_split_2.save_model(2)
+    model_to_train.train_model([TimeHistory(), checkpoint_callback])
+    model_to_train.save_training_history(0)
+    model_to_train.test_model(second_val_data_split)
 
 def check_image_sizes() -> List[Tuple[int, int]]:
     
@@ -692,31 +667,27 @@ def find_min_image_size(image_sizes: List[Tuple[int,int]]) -> Tuple[int,int]:
     
     return min_width, min_height
 
+
+def count_images_per_class():
+
+    current_dir: str = os.getcwd()
+    data_dir: str = os.path.join(os.path.dirname(current_dir), 'data')
+    dir_list = os.listdir(data_dir)
+    class_image_count = {}
+    for index, directory in enumerate(dir_list):
+        class_image_count[NUMBER_TO_LABEL[index]] = len(os.listdir(os.path.join(data_dir, directory)))
+
+    return class_image_count
+
 if __name__ == '__main__':
+    res = count_images_per_class()
 
-    image_sizes: List[Tuple[int,int]] = check_image_sizes()
-
-    image_size_count: int = len(image_sizes)
-    
-    print(f"COUNT OF IMAGE SIZES: {image_size_count}")
-    
-    for size in image_sizes:
-        
-        width, height = size
-
-    max_image_size = find_max_image_size(image_sizes)
-    print(max_image_size)
-
-
-    min_image_size = find_min_image_size(image_sizes)
-    print(min_image_size)
-
-
-    #for it in list(LABELS_TO_NUMBER.keys()):
-    #    histrogram(f"{it}")
-    #
+    #for index, class_name in enumerate(list(res.keys())):
+    #    print(f"{index} : {class_name} : {res[class_name]}")
 
     load_dataset_and_prepare()
+
+
 
 
 
